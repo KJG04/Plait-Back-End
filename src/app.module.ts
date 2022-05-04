@@ -3,6 +3,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { RoomModule } from './room/room.module';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 @Module({
   imports: [
@@ -16,6 +18,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       database: 'plait',
       entities: [],
       synchronize: true,
+      namingStrategy: new SnakeNamingStrategy(),
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       autoSchemaFile: true,
@@ -27,6 +30,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         credentials: true,
       },
     }),
+    RoomModule,
   ],
 })
 export class AppModule {}

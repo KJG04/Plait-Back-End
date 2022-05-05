@@ -5,6 +5,9 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RoomModule } from './room/room.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import { User } from './room/entities/user.entity';
+import { Content } from './room/entities/content.entity';
+import { Room } from './room/entities/room.entity';
 
 @Module({
   imports: [
@@ -16,7 +19,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
       username: process.env.MYSQL_USERNAME,
       password: process.env.MYSQL_PASSWORD,
       database: 'plait',
-      entities: [],
+      entities: [User, Content, Room],
       synchronize: true,
       namingStrategy: new SnakeNamingStrategy(),
     }),
@@ -29,6 +32,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
         origin: 'https://localhost:3000',
         credentials: true,
       },
+      installSubscriptionHandlers: true,
     }),
     RoomModule,
   ],

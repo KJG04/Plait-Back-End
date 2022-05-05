@@ -1,12 +1,14 @@
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Room } from './room.entity';
 import { User } from './user.entity';
 
 enum ContentType {
-  YOUTUBE = 'youtube',
-  SOUNDCLOUD = 'soundcloud',
+  YOUTUBE,
+  SOUNDCLOUD,
 }
+
+registerEnumType(ContentType, { name: 'ContentType' });
 
 @ObjectType()
 @Entity()

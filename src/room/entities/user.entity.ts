@@ -1,4 +1,6 @@
 import { Field, ObjectType } from '@nestjs/graphql';
+import { nanoid } from 'nanoid';
+import colors from 'src/constant/colors';
 import {
   Column,
   Entity,
@@ -34,4 +36,20 @@ export class User {
   @Field(() => [Content])
   @OneToMany(() => Content, (content) => content.user)
   contents: Content[];
+
+  static create(name: string, room: Room) {
+    const user = new User();
+
+    const colorValues = [...Object.values(colors)];
+    const color =
+      colorValues[Math.floor(Math.random() * colorValues.length - 1)];
+
+    user.color = color;
+    user.contents = [];
+    user.name = name;
+    user.room = room;
+    user.uuid = nanoid(36);
+
+    return user;
+  }
 }

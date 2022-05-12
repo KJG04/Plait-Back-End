@@ -1,4 +1,5 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
+import { nanoid } from 'nanoid';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Content } from './content.entity';
 import { User } from './user.entity';
@@ -9,9 +10,9 @@ export class Room {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Field(() => Int)
-  @Column({ length: 36 })
-  uuid: string;
+  @Field(() => String)
+  @Column({ length: 6 })
+  code: string;
 
   @Field(() => Boolean)
   @Column()
@@ -28,4 +29,13 @@ export class Room {
   @Field(() => [Content])
   @OneToMany(() => Content, (content) => content.room, { cascade: true })
   contents: Content[];
+
+  static create() {
+    const room = new Room();
+    room.code = nanoid(6);
+    room.isPlaying = false;
+    room.playTime = 0;
+
+    return room;
+  }
 }

@@ -34,7 +34,9 @@ import { Room } from './room/entities/room.entity';
         credentials: true,
       },
       context: (context) => context,
-      installSubscriptionHandlers: true,
+      subscriptions: {
+        'graphql-ws': true,
+      },
     }),
     RoomModule,
   ],

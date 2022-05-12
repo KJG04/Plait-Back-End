@@ -11,7 +11,7 @@ import { Room } from './room/entities/room.entity';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: '127.0.0.1',
@@ -26,7 +26,7 @@ import { Room } from './room/entities/room.entity';
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       autoSchemaFile: true,
-      debug: true,
+      debug: false,
       playground: { settings: { 'request.credentials': 'include' } },
       driver: ApolloDriver,
       cors: {

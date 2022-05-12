@@ -45,7 +45,6 @@ export class User {
       colorValues[Math.floor(Math.random() * colorValues.length - 1)];
 
     user.color = color;
-    user.contents = [];
     user.name = name;
     user.room = room;
     user.uuid = nanoid(36);

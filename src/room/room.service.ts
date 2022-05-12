@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PersistedQueryNotFoundError } from 'apollo-server-errors';
+import {
+  PersistedQueryNotFoundError,
+  AuthenticationError,
+  ForbiddenError,
+} from 'apollo-server-errors';
 import { Repository } from 'typeorm';
 import { Room } from './entities/room.entity';
 import JoinRoomInput from './interface/JoinRoomInput.interface';
@@ -101,6 +105,20 @@ export class RoomService {
     //방에 유저가 없으면 삭제
     if (room.users.length <= 0) {
       await this.roomRepository.remove(room);
+    }
+  }
+
+  checkAuthenfication(token: string, roomCode: string) {
+    if (!token) {
+      throw new AuthenticationError('인증되지 않은 사용자입니다.');
+    }
+
+    const { roomCode: payloadRoomCode } = this.jwtService.decode(
+      token,
+    ) as JwtPayload;
+
+    if (payloadRoomCode !== roomCode) {
+      throw new ForbiddenError('요청한 방에 참여하지 않은 유저입니다.');
     }
   }
 }

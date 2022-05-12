@@ -3,10 +3,12 @@ import { ForbiddenError } from 'apollo-server-express';
 import { Room } from './entities/room.entity';
 import JoinRoomInput from './interface/JoinRoomInput.interface';
 import { RoomService } from './room.service';
+import tokenName from 'src/constant/tokenName';
 
 @Resolver(() => Room)
 export class RoomResolver {
   constructor(private readonly roomService: RoomService) {}
+
   @Query(() => Int, { name: 'activeUserCount' })
   async getActiveUsers() {
     return this.roomService.getActiveUsers();
@@ -14,7 +16,7 @@ export class RoomResolver {
 
   @Mutation(() => Boolean, { name: 'joinRoom' })
   async joinRoom(@Args('room') room: JoinRoomInput, @Context() context: any) {
-    const cookieToken = context.req.cookies['token'];
+    const cookieToken = context.req.cookies[tokenName];
 
     if (cookieToken) {
       //만약 이미 참여한 방이 있으면 방을 나간다
@@ -23,7 +25,7 @@ export class RoomResolver {
 
     const token = await this.roomService.joinRoom(room);
 
-    context.res.cookie('token', token, {
+    context.res.cookie(tokenName, token, {
       maxAge: 60 * 60 * 48,
       httpOnly: true,
     });
@@ -33,7 +35,7 @@ export class RoomResolver {
 
   @Mutation(() => String, { name: 'createRoom' })
   async createRoom(@Args('name') name: string, @Context() context: any) {
-    const cookieToken = context.req.cookies['token'];
+    const cookieToken = context.req.cookies[tokenName];
 
     if (cookieToken) {
       //만약 이미 참여한 방이 있으면 방을 나간다
@@ -42,7 +44,7 @@ export class RoomResolver {
 
     const [code, token] = await this.roomService.createRoom(name);
 
-    context.res.cookie('token', token, {
+    context.res.cookie(tokenName, token, {
       maxAge: 60 * 60 * 48,
       httpOnly: true,
     });
@@ -52,14 +54,14 @@ export class RoomResolver {
 
   @Mutation(() => Boolean, { name: 'leaveRoom' })
   async leaveRoom(@Context() context: any) {
-    const token = context.req.cookies['token'];
+    const token = context.req.cookies[tokenName];
 
     if (!token) {
       throw new ForbiddenError('참가한 방이 없으므로 방을 떠날 수 없습니다.');
     }
 
     await this.roomService.leaveRoom(token);
-    context.res.cookie('token', '', { maxAge: 0, httpOnly: true });
+    context.res.cookie(tokenName, '', { maxAge: 0, httpOnly: true });
 
     return true;
   }

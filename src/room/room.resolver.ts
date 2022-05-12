@@ -1,9 +1,20 @@
-import { Args, Context, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { ForbiddenError } from 'apollo-server-express';
+import {
+  Args,
+  Context,
+  Int,
+  Mutation,
+  Query,
+  Resolver,
+  Subscription,
+} from '@nestjs/graphql';
+import { ForbiddenError } from 'apollo-server-errors';
 import { Room } from './entities/room.entity';
 import JoinRoomInput from './interface/JoinRoomInput.interface';
 import { RoomService } from './room.service';
+import { PubSub } from 'graphql-subscriptions';
 import tokenName from 'src/constant/tokenName';
+
+const pubSub = new PubSub();
 
 @Resolver(() => Room)
 export class RoomResolver {
@@ -64,5 +75,14 @@ export class RoomResolver {
     context.res.cookie(tokenName, '', { maxAge: 0, httpOnly: true });
 
     return true;
+  }
+
+  @Subscription(() => Boolean, { name: 'isContentPlaying' })
+  subscribeToIsPlaying(@Args() roomCode: string, @Context() context: any) {
+    const token = context.req.cookies[tokenName];
+
+    this.roomService.checkAuthenfication(token, roomCode);
+
+    return pubSub.asyncIterator('CHANGE_IS_PLAYING');
   }
 }

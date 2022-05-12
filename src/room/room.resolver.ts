@@ -13,6 +13,8 @@ import JoinRoomInput from './interface/JoinRoomInput.interface';
 import { RoomService } from './room.service';
 import { PubSub } from 'graphql-subscriptions';
 import tokenName from 'src/constant/tokenName';
+import subscriptionKeys from 'src/constant/subscriptionKeys';
+import { Content } from './entities/content.entity';
 
 const pubSub = new PubSub();
 
@@ -80,9 +82,16 @@ export class RoomResolver {
   @Subscription(() => Boolean, { name: 'isContentPlaying' })
   subscribeToIsPlaying(@Args() roomCode: string, @Context() context: any) {
     const token = context.req.cookies[tokenName];
-
     this.roomService.checkAuthenfication(token, roomCode);
 
-    return pubSub.asyncIterator('CHANGE_IS_PLAYING');
+    return pubSub.asyncIterator(subscriptionKeys.changeContents);
+  }
+
+  @Subscription(() => [Content], { name: 'contents' })
+  subscribeToContents(@Args() roomCode: string, @Context() context: any) {
+    const token = context.req.cookies[tokenName];
+    this.roomService.checkAuthenfication(token, roomCode);
+
+    return pubSub.asyncIterator(subscriptionKeys.changeContents);
   }
 }

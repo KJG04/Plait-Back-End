@@ -1,4 +1,5 @@
 import { Field, ObjectType } from '@nestjs/graphql';
+import { IsInt, IsString } from 'class-validator';
 import { nanoid } from 'nanoid';
 import colors from 'src/constant/colors';
 import {
@@ -15,18 +16,22 @@ import { Room } from './room.entity';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
+  @IsInt()
   id: number;
 
   @Field(() => String)
   @Column({ length: 36 })
+  @IsString()
   uuid: string;
 
   @Field(() => String)
   @Column({ type: 'varchar', length: 36 })
+  @IsString()
   name: string;
 
   @Field(() => String)
   @Column({ type: 'varchar', length: 6 })
+  @IsString()
   color: string;
 
   @Field(() => Room)

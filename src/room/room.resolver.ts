@@ -79,19 +79,47 @@ export class RoomResolver {
     return true;
   }
 
-  @Subscription(() => Boolean, { name: 'isContentPlaying' })
-  subscribeToIsPlaying(@Args() roomCode: string, @Context() context: any) {
+  @Query(() => Boolean, { name: 'isContentPlaying' })
+  getIsContentPlaying(
+    @Args('roomCode') roomCode: string,
+    @Context() context: any,
+  ) {
     const token = context.req.cookies[tokenName];
     this.roomService.checkAuthenfication(token, roomCode);
 
-    return pubSub.asyncIterator(subscriptionKeys.changeContents);
+    return this.roomService.getIsContentPlaying(roomCode);
+  }
+
+  @Subscription(() => Boolean, { name: 'isContentPlaying' })
+  subscribeToIsPlaying(
+    @Args('roomCode') roomCode: string,
+    @Context() context: any,
+  ) {
+    const token = context.token;
+    this.roomService.checkAuthenfication(token, roomCode);
+
+    return pubSub.asyncIterator([subscriptionKeys.changeIsPlaying, roomCode]);
+  }
+
+  @Query(() => [Content], { name: 'contents' })
+  async getContents(
+    @Args('roomCode') roomCode: string,
+    @Context() context: any,
+  ) {
+    const token = context.req.cookies[tokenName];
+    this.roomService.checkAuthenfication(token, roomCode);
+
+    return this.roomService.getContents(roomCode);
   }
 
   @Subscription(() => [Content], { name: 'contents' })
-  subscribeToContents(@Args() roomCode: string, @Context() context: any) {
-    const token = context.req.cookies[tokenName];
+  subscribeToContents(
+    @Args('roomCode') roomCode: string,
+    @Context() context: any,
+  ) {
+    const token = context.token;
     this.roomService.checkAuthenfication(token, roomCode);
 
-    return pubSub.asyncIterator(subscriptionKeys.changeContents);
+    return pubSub.asyncIterator([subscriptionKeys.changeContents, roomCode]);
   }
 }

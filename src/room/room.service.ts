@@ -12,6 +12,7 @@ import { User } from './entities/user.entity';
 import { nanoid } from 'nanoid';
 import { JwtService } from '@nestjs/jwt';
 import JwtPayload from './interface/JwtPayload.interface';
+import { Content } from './entities/content.entity';
 
 @Injectable()
 export class RoomService {
@@ -119,6 +120,31 @@ export class RoomService {
 
     if (payloadRoomCode !== roomCode) {
       throw new ForbiddenError('요청한 방에 참여하지 않은 유저입니다.');
+    }
+  }
+
+  async getIsContentPlaying(roomCode: string): Promise<boolean> {
+    try {
+      const room = await this.roomRepository.findOneByOrFail({
+        code: roomCode,
+      });
+
+      return room.isPlaying;
+    } catch (error) {
+      throw new PersistedQueryNotFoundError();
+    }
+  }
+
+  async getContents(roomCode: string): Promise<Content[]> {
+    try {
+      const room = await this.roomRepository.findOneOrFail({
+        where: { code: roomCode },
+        relations: ['contents'],
+      });
+
+      return room.contents;
+    } catch (error) {
+      throw new PersistedQueryNotFoundError();
     }
   }
 }

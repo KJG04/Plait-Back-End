@@ -8,6 +8,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { User } from './room/entities/user.entity';
 import { Content } from './room/entities/content.entity';
 import { Room } from './room/entities/room.entity';
+import getCookie from './constant/getCookie';
 
 @Module({
   imports: [
@@ -27,7 +28,9 @@ import { Room } from './room/entities/room.entity';
     GraphQLModule.forRoot<ApolloDriverConfig>({
       autoSchemaFile: true,
       debug: false,
-      playground: { settings: { 'request.credentials': 'include' } },
+      playground: {
+        settings: { 'request.credentials': 'include' },
+      },
       driver: ApolloDriver,
       cors: {
         origin: 'https://localhost:3000',
@@ -35,7 +38,15 @@ import { Room } from './room/entities/room.entity';
       },
       context: (context) => context,
       subscriptions: {
-        'graphql-ws': true,
+        'subscriptions-transport-ws': {
+          path: '/graphql',
+          onConnect: (_, webSocket) => {
+            const cookie = webSocket.upgradeReq.headers.cookie;
+            const token = getCookie(cookie, 'token');
+
+            return { token: token };
+          },
+        },
       },
     }),
     RoomModule,

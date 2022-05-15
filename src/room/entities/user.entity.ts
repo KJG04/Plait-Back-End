@@ -41,8 +41,7 @@ export class User {
     const user = new User();
 
     const colorValues = [...Object.values(colors)];
-    const color =
-      colorValues[Math.floor(Math.random() * colorValues.length - 1)];
+    const color = colorValues[Math.floor(Math.random() * colorValues.length)];
 
     user.color = color;
     user.name = name;

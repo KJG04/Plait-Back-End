@@ -90,6 +90,27 @@ export class RoomResolver {
     return this.roomService.getIsContentPlaying(roomCode);
   }
 
+  @Mutation(() => Boolean, { name: 'isContentPlaying' })
+  async modifyIsContentPlaying(
+    @Args('roomCode') roomCode: string,
+    @Args('condition') condition: boolean,
+    @Context() context: any,
+  ) {
+    const token = context.req.cookies[tokenName];
+    this.roomService.checkAuthenfication(token, roomCode);
+
+    const changed = await this.roomService.modifyIsContentPlaying(
+      roomCode,
+      condition,
+    );
+
+    await pubSub.publish(`${subscriptionKeys.changeIsPlaying}_${roomCode}`, {
+      isContentPlaying: changed,
+    });
+
+    return changed;
+  }
+
   @Subscription(() => Boolean, { name: 'isContentPlaying' })
   subscribeToIsPlaying(
     @Args('roomCode') roomCode: string,
@@ -98,7 +119,9 @@ export class RoomResolver {
     const token = context.token;
     this.roomService.checkAuthenfication(token, roomCode);
 
-    return pubSub.asyncIterator([subscriptionKeys.changeIsPlaying, roomCode]);
+    return pubSub.asyncIterator(
+      `${subscriptionKeys.changeIsPlaying}_${roomCode}`,
+    );
   }
 
   @Query(() => [Content], { name: 'contents' })

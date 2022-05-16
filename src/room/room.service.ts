@@ -135,6 +135,26 @@ export class RoomService {
     }
   }
 
+  async modifyIsContentPlaying(
+    roomCode: string,
+    condition: boolean,
+  ): Promise<boolean> {
+    let room: Room;
+    try {
+      room = await this.roomRepository.findOneByOrFail({
+        code: roomCode,
+      });
+    } catch (error) {
+      throw new PersistedQueryNotFoundError();
+    }
+
+    room.isPlaying = condition;
+
+    await this.roomRepository.save(room);
+
+    return room.isPlaying;
+  }
+
   async getContents(roomCode: string): Promise<Content[]> {
     try {
       const room = await this.roomRepository.findOneOrFail({

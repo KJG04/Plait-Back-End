@@ -9,9 +9,12 @@ import { User } from './room/entities/user.entity';
 import { Content } from './room/entities/content.entity';
 import { Room } from './room/entities/room.entity';
 import getCookie from './constant/getCookie';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TaskModule } from './task/task.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'mysql',
@@ -50,6 +53,7 @@ import getCookie from './constant/getCookie';
       },
     }),
     RoomModule,
+    TaskModule,
   ],
 })
 export class AppModule {}

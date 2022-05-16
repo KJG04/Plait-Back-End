@@ -1,10 +1,11 @@
 import { Field, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { IsEnum, IsInt, IsString } from 'class-validator';
+import { nanoid } from 'nanoid';
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Room } from './room.entity';
 import { User } from './user.entity';
 
-enum ContentType {
+export enum ContentType {
   YOUTUBE,
   SOUNDCLOUD,
 }
@@ -24,7 +25,7 @@ export class Content {
   uuid: string;
 
   @Field(() => String)
-  @Column({ type: 'varchar', length: 36 })
+  @Column({ type: 'varchar' })
   @IsString()
   contentId: string;
 
@@ -40,4 +41,13 @@ export class Content {
   @Field(() => Room)
   @ManyToOne(() => Room, (room) => room.contents, { onDelete: 'CASCADE' })
   room: Room;
+
+  static create(contentId: string, type: ContentType) {
+    const content = new Content();
+    content.contentType = type;
+    content.contentId = contentId;
+    content.uuid = nanoid(36);
+
+    return content;
+  }
 }

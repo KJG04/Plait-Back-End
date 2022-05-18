@@ -12,7 +12,7 @@ import { User } from './entities/user.entity';
 import { nanoid } from 'nanoid';
 import { JwtService } from '@nestjs/jwt';
 import JwtPayload from './interface/JwtPayload.interface';
-import { Content } from './entities/content.entity';
+import { Content, ContentType } from './entities/content.entity';
 
 @Injectable()
 export class RoomService {
@@ -21,6 +21,8 @@ export class RoomService {
     private roomRepository: Repository<Room>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Content)
+    private contentRepository: Repository<Content>,
     private jwtService: JwtService,
   ) {}
 
@@ -64,7 +66,7 @@ export class RoomService {
     return token;
   }
 
-  async createRoom(name: string): Promise<string[]> {
+  async createRoom(name: string): Promise<[Room, string]> {
     const room = Room.create(); //방을 만듬
     const findedRoom = await this.roomRepository.findOneBy({ code: room.code });
 
@@ -88,39 +90,61 @@ export class RoomService {
     //토큰 발급
     const token = this.jwtService.sign(payload);
 
-    return [createdRoom.code, token];
+    return [createdRoom, token];
   }
 
   async leaveRoom(token: string) {
+    if (!token) {
+      return;
+    }
     const { userUuid, roomCode } = this.jwtService.decode(token) as JwtPayload;
 
     //유저 제거
-    await this.userRepository.delete({ uuid: userUuid });
+    this.userRepository.update({ uuid: userUuid }, { isDeleted: true });
 
-    //나간 방 가져오기
-    const room = await this.roomRepository.findOne({
-      where: { code: roomCode },
-      relations: ['users'],
-    });
+    let room: Room;
+    try {
+      //나간 방 가져오기
+      room = await this.roomRepository.findOneOrFail({
+        where: { code: roomCode },
+        relations: ['users'],
+      });
+    } catch (error) {
+      throw new PersistedQueryNotFoundError();
+    }
 
     //방에 유저가 없으면 삭제
-    if (room.users.length <= 0) {
+    if (
+      room.users.length <= 0 ||
+      room.users.every((value) => value.isDeleted)
+    ) {
       await this.roomRepository.remove(room);
     }
   }
 
-  checkAuthenfication(token: string, roomCode: string) {
+  async checkAuthenfication(
+    token: string,
+    roomCode: string,
+  ): Promise<JwtPayload> {
     if (!token) {
       throw new AuthenticationError('인증되지 않은 사용자입니다.');
     }
 
-    const { roomCode: payloadRoomCode } = this.jwtService.decode(
-      token,
-    ) as JwtPayload;
+    const payload = this.jwtService.decode(token) as JwtPayload;
+
+    const { roomCode: payloadRoomCode, userUuid } = payload;
 
     if (payloadRoomCode !== roomCode) {
       throw new ForbiddenError('요청한 방에 참여하지 않은 유저입니다.');
     }
+
+    const user = await this.userRepository.findOneByOrFail({ uuid: userUuid });
+
+    if (user.isDeleted) {
+      throw new AuthenticationError('삭제 된 사용자입니다.');
+    }
+
+    return payload;
   }
 
   async getIsContentPlaying(roomCode: string): Promise<boolean> {
@@ -166,5 +190,65 @@ export class RoomService {
     } catch (error) {
       throw new PersistedQueryNotFoundError();
     }
+  }
+
+  async pushContent(
+    roomCode: string,
+    userUuid: string,
+    contentId: string,
+    type: ContentType,
+  ): Promise<Content[]> {
+    let room: Room;
+
+    try {
+      room = await this.roomRepository.findOneOrFail({
+        where: { code: roomCode },
+        relations: ['contents'],
+      });
+    } catch (error) {
+      throw new PersistedQueryNotFoundError();
+    }
+
+    const newContent = Content.create(contentId, type);
+    newContent.room = room;
+
+    let user: User;
+    try {
+      user = await this.userRepository.findOneByOrFail({ uuid: userUuid });
+    } catch (error) {
+      throw new PersistedQueryNotFoundError();
+    }
+    newContent.user = user;
+
+    await this.contentRepository.save(newContent);
+
+    return await this.contentRepository.find({
+      where: { room: { id: room.id } },
+      relations: ['user', 'room'],
+    });
+  }
+
+  async checkIsRoomExist(roomCode: string) {
+    try {
+      await this.roomRepository.findOneByOrFail({ code: roomCode });
+    } catch (error) {
+      throw new PersistedQueryNotFoundError();
+    }
+  }
+
+  async removeContent(roomCode: string, uuid: string): Promise<Content[]> {
+    await this.contentRepository.delete({ uuid });
+
+    let room: Room;
+    try {
+      room = await this.roomRepository.findOneOrFail({
+        where: { code: roomCode },
+        relations: ['contents'],
+      });
+    } catch (error) {
+      throw new PersistedQueryNotFoundError();
+    }
+
+    return room.contents;
   }
 }

@@ -35,7 +35,7 @@ export class Content {
   contentType: ContentType;
 
   @Field(() => User)
-  @ManyToOne(() => User, (user) => user.contents)
+  @ManyToOne(() => User, (user) => user.contents, { onDelete: 'CASCADE' })
   user: User;
 
   @Field(() => Room)

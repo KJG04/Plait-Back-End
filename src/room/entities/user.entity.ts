@@ -34,12 +34,16 @@ export class User {
   @IsString()
   color: string;
 
+  @Field(() => Boolean)
+  @Column({ type: 'boolean' })
+  isDeleted: boolean;
+
   @Field(() => Room)
   @ManyToOne(() => Room, (room) => room.users, { onDelete: 'CASCADE' })
   room: Room;
 
   @Field(() => [Content])
-  @OneToMany(() => Content, (content) => content.user)
+  @OneToMany(() => Content, (content) => content.user, { cascade: true })
   contents: Content[];
 
   static create(name: string, room: Room) {

@@ -14,7 +14,7 @@ import { RoomService } from './room.service';
 import { PubSub } from 'graphql-subscriptions';
 import tokenName from 'src/constant/tokenName';
 import subscriptionKeys from 'src/constant/subscriptionKeys';
-import { Content } from './entities/content.entity';
+import { Content, ContentType } from './entities/content.entity';
 
 const pubSub = new PubSub();
 
@@ -39,14 +39,14 @@ export class RoomResolver {
     const token = await this.roomService.joinRoom(room);
 
     context.res.cookie(tokenName, token, {
-      maxAge: 60 * 60 * 48,
+      maxAge: 60 * 60 * 48 * 1000,
       httpOnly: true,
     });
 
     return true;
   }
 
-  @Mutation(() => String, { name: 'createRoom' })
+  @Mutation(() => Room, { name: 'createRoom' })
   async createRoom(@Args('name') name: string, @Context() context: any) {
     const cookieToken = context.req.cookies[tokenName];
 
@@ -55,14 +55,14 @@ export class RoomResolver {
       await this.roomService.leaveRoom(cookieToken);
     }
 
-    const [code, token] = await this.roomService.createRoom(name);
+    const [room, token] = await this.roomService.createRoom(name);
 
     context.res.cookie(tokenName, token, {
-      maxAge: 60 * 60 * 48,
+      maxAge: 60 * 60 * 48 * 1000,
       httpOnly: true,
     });
 
-    return code;
+    return room;
   }
 
   @Mutation(() => Boolean, { name: 'leaveRoom' })
@@ -80,12 +80,12 @@ export class RoomResolver {
   }
 
   @Query(() => Boolean, { name: 'isContentPlaying' })
-  getIsContentPlaying(
+  async getIsContentPlaying(
     @Args('roomCode') roomCode: string,
     @Context() context: any,
   ) {
     const token = context.req.cookies[tokenName];
-    this.roomService.checkAuthenfication(token, roomCode);
+    await this.roomService.checkAuthenfication(token, roomCode);
 
     return this.roomService.getIsContentPlaying(roomCode);
   }
@@ -97,7 +97,7 @@ export class RoomResolver {
     @Context() context: any,
   ) {
     const token = context.req.cookies[tokenName];
-    this.roomService.checkAuthenfication(token, roomCode);
+    await this.roomService.checkAuthenfication(token, roomCode);
 
     const changed = await this.roomService.modifyIsContentPlaying(
       roomCode,
@@ -112,12 +112,14 @@ export class RoomResolver {
   }
 
   @Subscription(() => Boolean, { name: 'isContentPlaying' })
-  subscribeToIsPlaying(
+  async subscribeToIsPlaying(
     @Args('roomCode') roomCode: string,
     @Context() context: any,
   ) {
     const token = context.token;
-    this.roomService.checkAuthenfication(token, roomCode);
+    await this.roomService.checkAuthenfication(token, roomCode);
+
+    await this.roomService.checkIsRoomExist(roomCode);
 
     return pubSub.asyncIterator(
       `${subscriptionKeys.changeIsPlaying}_${roomCode}`,
@@ -130,19 +132,87 @@ export class RoomResolver {
     @Context() context: any,
   ) {
     const token = context.req.cookies[tokenName];
-    this.roomService.checkAuthenfication(token, roomCode);
+    await this.roomService.checkAuthenfication(token, roomCode);
 
     return this.roomService.getContents(roomCode);
   }
 
+  @Mutation(() => Boolean, { name: 'addContent' })
+  async addContent(
+    @Args('roomCode') roomCode: string,
+    @Args('contentId') contentId: string,
+    @Args('type', { type: () => ContentType }) type: ContentType,
+    @Context() context: any,
+  ) {
+    const token = context.req.cookies[tokenName];
+    const { userUuid } = await this.roomService.checkAuthenfication(
+      token,
+      roomCode,
+    );
+
+    const content = await this.roomService.pushContent(
+      roomCode,
+      userUuid,
+      contentId,
+      type,
+    );
+
+    await pubSub.publish(`${subscriptionKeys.changeContents}_${roomCode}`, {
+      contents: content,
+    });
+
+    return true;
+  }
+
+  @Mutation(() => Boolean, { name: 'deleteContent' })
+  async deleteContent(
+    @Args('roomCode') roomCode: string,
+    @Args('uuid') uuid: string,
+    @Context() context: any,
+  ) {
+    const token = context.req.cookies[tokenName];
+    await this.roomService.checkAuthenfication(token, roomCode);
+
+    const contents = await this.roomService.removeContent(roomCode, uuid);
+
+    await pubSub.publish(
+      `${subscriptionKeys.changeContents}_${roomCode}`,
+      contents,
+    );
+
+    return true;
+  }
+
   @Subscription(() => [Content], { name: 'contents' })
-  subscribeToContents(
+  async subscribeToContents(
     @Args('roomCode') roomCode: string,
     @Context() context: any,
   ) {
     const token = context.token;
-    this.roomService.checkAuthenfication(token, roomCode);
+    await this.roomService.checkAuthenfication(token, roomCode);
 
-    return pubSub.asyncIterator([subscriptionKeys.changeContents, roomCode]);
+    await this.roomService.checkIsRoomExist(roomCode);
+
+    return pubSub.asyncIterator(
+      `${subscriptionKeys.changeContents}_${roomCode}`,
+    );
+  }
+
+  @Subscription(() => Boolean, { name: 'listening' })
+  async listeningRoom(
+    @Args('roomCode') roomCode: string,
+    @Context() context: any,
+  ) {
+    const token = context.token;
+    const { userUuid } = await this.roomService.checkAuthenfication(
+      token,
+      roomCode,
+    );
+
+    await this.roomService.checkIsRoomExist(roomCode);
+
+    return pubSub.asyncIterator(
+      `${subscriptionKeys.listeningRoom}_${roomCode}_${userUuid}`,
+    );
   }
 }

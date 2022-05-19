@@ -8,7 +8,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { User } from './room/entities/user.entity';
 import { Content } from './room/entities/content.entity';
 import { Room } from './room/entities/room.entity';
-import getCookie from './constant/getCookie';
+import getCookie from './shared/getCookie';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TaskModule } from './task/task.module';
 
@@ -36,7 +36,7 @@ import { TaskModule } from './task/task.module';
       },
       driver: ApolloDriver,
       cors: {
-        origin: 'https://localhost:3000',
+        origin: 'http://localhost:3000',
         credentials: true,
       },
       context: (context) => context,

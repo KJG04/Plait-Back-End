@@ -1,7 +1,7 @@
 import { Field, ObjectType } from '@nestjs/graphql';
-import { IsInt, IsString } from 'class-validator';
+import { IsDate, IsInt, IsString } from 'class-validator';
 import { nanoid } from 'nanoid';
-import colors from 'src/constant/colors';
+import colors from 'src/shared/colors';
 import {
   Column,
   Entity,
@@ -35,8 +35,17 @@ export class User {
   color: string;
 
   @Field(() => Boolean)
-  @Column({ type: 'boolean' })
+  @Column()
   isDeleted: boolean;
+
+  @Field(() => Boolean)
+  @Column()
+  isListening: boolean;
+
+  @Field(() => Date)
+  @Column({ type: 'datetime' })
+  @IsDate()
+  lastListeningAt: Date;
 
   @Field(() => Room)
   @ManyToOne(() => Room, (room) => room.users, { onDelete: 'CASCADE' })
@@ -56,6 +65,9 @@ export class User {
     user.name = name;
     user.room = room;
     user.uuid = nanoid(36);
+    user.isDeleted = false;
+    user.isListening = true;
+    user.lastListeningAt = new Date();
 
     return user;
   }

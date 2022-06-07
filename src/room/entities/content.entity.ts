@@ -7,7 +7,7 @@ import { User } from './user.entity';
 
 export enum ContentType {
   YOUTUBE,
-  SOUNDCLOUD,
+  TWITCH,
 }
 
 registerEnumType(ContentType, { name: 'ContentType' });

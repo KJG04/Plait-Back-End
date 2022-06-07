@@ -346,4 +346,12 @@ export class RoomService {
 
     return;
   }
+
+  async getUserInfo(uuid: string) {
+    try {
+      return await this.userRepository.findOneByOrFail({ uuid });
+    } catch (error) {
+      throw new PersistedQueryNotFoundError();
+    }
+  }
 }

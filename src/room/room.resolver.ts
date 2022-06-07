@@ -14,6 +14,7 @@ import tokenName from 'src/shared/tokenName';
 import subscriptionKeys from 'src/shared/subscriptionKeys';
 import { ContentType } from './entities/content.entity';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
+import { Emoji, EmojiInput } from './interface/EmojiEvent';
 
 const pubSub = new RedisPubSub();
 
@@ -243,5 +244,47 @@ export class RoomResolver {
     const room = await this.roomService.getRoomCodeByToken(token);
 
     return room;
+  }
+
+  @Mutation(() => Boolean, { name: 'popEmoji' })
+  async postEmoji(
+    @Args('roomCode') roomCode: string,
+    @Args('emoji') emoji: EmojiInput,
+    @Context() context: any,
+  ) {
+    const token = context.req.cookies[tokenName];
+    const { userUuid } = await this.roomService.checkAuthenfication(
+      token,
+      roomCode,
+    );
+
+    const { color, name } = await this.roomService.getUserInfo(userUuid);
+
+    pubSub.publish(`${subscriptionKeys.listeningEmoji}_${roomCode}`, {
+      listeningEmoji: {
+        color,
+        name,
+        x: emoji.x,
+        y: emoji.y,
+        emoji: emoji.emoji,
+      },
+    });
+
+    return true;
+  }
+
+  @Subscription(() => Emoji, { name: 'listeningEmoji' })
+  async listeningEmoji(
+    @Args('roomCode') roomCode: string,
+    @Context() context: any,
+  ) {
+    const token = context.token;
+
+    await this.roomService.checkAuthenfication(token, roomCode);
+    await this.roomService.checkIsRoomExist(roomCode);
+
+    return pubSub.asyncIterator(
+      `${subscriptionKeys.listeningEmoji}_${roomCode}`,
+    );
   }
 }

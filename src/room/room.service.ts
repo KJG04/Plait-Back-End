@@ -4,6 +4,7 @@ import {
   PersistedQueryNotFoundError,
   AuthenticationError,
   ForbiddenError,
+  ApolloError,
 } from 'apollo-server-errors';
 import { Repository } from 'typeorm';
 import { Room } from './entities/room.entity';
@@ -13,6 +14,8 @@ import { nanoid } from 'nanoid';
 import { JwtService } from '@nestjs/jwt';
 import JwtPayload from './interface/JwtPayload.interface';
 import { Content, ContentType } from './entities/content.entity';
+import subscriptionKeys from 'src/shared/subscriptionKeys';
+import { RedisPubSub } from 'graphql-redis-subscriptions';
 
 @Injectable()
 export class RoomService {
@@ -27,15 +30,15 @@ export class RoomService {
   ) {}
 
   async getActiveUsers(): Promise<number> {
-    const rooms = await this.roomRepository.find();
+    const users = await this.userRepository.find({
+      where: { isListening: true },
+    });
 
-    if (rooms.length <= 0) {
+    if (!users) {
       return 0;
     }
 
-    return rooms
-      .map((value) => value.users.length)
-      .reduce((prev, curr) => prev + curr);
+    return users.length;
   }
 
   async joinRoom(room: JoinRoomInput): Promise<string> {
@@ -49,6 +52,10 @@ export class RoomService {
     //찾은 방이 없으면 not found 오류
     if (!findedRoom) {
       throw new PersistedQueryNotFoundError();
+    }
+
+    if (findedRoom.users.length >= 16) {
+      throw new ApolloError('방의 인원이 꽉 찼습니다.');
     }
 
     //유저 생성
@@ -93,10 +100,11 @@ export class RoomService {
     return [createdRoom, token];
   }
 
-  async leaveRoom(token: string) {
+  async leaveRoom(token: string): Promise<Room> {
     if (!token) {
-      return;
+      throw new PersistedQueryNotFoundError();
     }
+
     const { userUuid, roomCode } = this.jwtService.decode(token) as JwtPayload;
 
     //유저 제거
@@ -118,8 +126,10 @@ export class RoomService {
       room.users.length <= 0 ||
       room.users.every((value) => value.isDeleted)
     ) {
-      await this.roomRepository.remove(room);
+      throw new PersistedQueryNotFoundError();
     }
+
+    return room;
   }
 
   async checkAuthenfication(
@@ -138,7 +148,14 @@ export class RoomService {
       throw new ForbiddenError('요청한 방에 참여하지 않은 유저입니다.');
     }
 
-    const user = await this.userRepository.findOneByOrFail({ uuid: userUuid });
+    let user: User;
+    try {
+      user = await this.userRepository.findOneByOrFail({
+        uuid: userUuid,
+      });
+    } catch (error) {
+      throw new PersistedQueryNotFoundError();
+    }
 
     if (user.isDeleted) {
       throw new AuthenticationError('삭제 된 사용자입니다.');
@@ -242,7 +259,7 @@ export class RoomService {
 
   async checkIsRoomExist(roomCode: string) {
     try {
-      await this.roomRepository.findOneByOrFail({ code: roomCode });
+      await this.roomRepository.findOneOrFail({ where: { code: roomCode } });
     } catch (error) {
       throw new PersistedQueryNotFoundError();
     }
@@ -262,5 +279,71 @@ export class RoomService {
     }
 
     return room.contents;
+  }
+
+  async listeningRoom(roomCode: string, userUuid: string) {
+    let user: User;
+
+    try {
+      user = await this.userRepository.findOneOrFail({
+        where: { uuid: userUuid },
+        relations: ['room'],
+      });
+    } catch (error) {
+      throw new PersistedQueryNotFoundError();
+    }
+
+    if (user.room.code !== roomCode) {
+      throw new ForbiddenError('참여한 방과 요청한 방이 다릅니다.');
+    }
+
+    if (user.isDeleted) {
+      throw new PersistedQueryNotFoundError();
+    }
+
+    user.isListening = true;
+
+    await this.userRepository.save(user);
+  }
+
+  async afterUpdateRoom(roomCode: string, pubSub: RedisPubSub) {
+    const room = await this.findRoom(roomCode);
+
+    await pubSub.publish(`${subscriptionKeys.changeRoom}_${roomCode}`, {
+      room: room,
+    });
+  }
+
+  async findRoom(roomCode: string) {
+    let room: Room;
+
+    try {
+      room = await this.roomRepository.findOneOrFail({
+        where: { code: roomCode },
+        relations: ['users', 'contents', 'contents.user'],
+      });
+    } catch (error) {
+      throw new PersistedQueryNotFoundError();
+    }
+
+    return room;
+  }
+
+  async updateLastListeng(roomCode: string, userUuid: string) {
+    let user: User;
+
+    try {
+      user = await this.userRepository.findOneOrFail({
+        where: { uuid: userUuid, room: { code: roomCode } },
+        relations: ['room'],
+      });
+    } catch (error) {
+      throw new PersistedQueryNotFoundError();
+    }
+
+    user.lastListeningAt = new Date();
+    this.userRepository.save(user);
+
+    return;
   }
 }

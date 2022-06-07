@@ -159,6 +159,18 @@ export class RoomService {
     }
   }
 
+  async getRoomCodeByToken(token: string) {
+    const payload = this.jwtService.decode(token) as JwtPayload;
+    const { roomCode: payloadRoomCode } = payload;
+    try {
+      return await this.roomRepository.findOneOrFail({
+        where: { code: payloadRoomCode },
+      });
+    } catch (error) {
+      throw new PersistedQueryNotFoundError();
+    }
+  }
+
   async modifyIsContentPlaying(
     roomCode: string,
     condition: boolean,

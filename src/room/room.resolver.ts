@@ -214,5 +214,12 @@ export class RoomResolver {
     return pubSub.asyncIterator(
       `${subscriptionKeys.listeningRoom}_${roomCode}_${userUuid}`,
     );
+  @Query(() => Room, { name: 'joinedRoom' })
+  async getJoinedRoom(@Context() context: any) {
+    const token = context.req.cookies[tokenName];
+
+    const room = await this.roomService.getRoomCodeByToken(token);
+
+    return room;
   }
 }

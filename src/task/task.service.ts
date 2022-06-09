@@ -35,6 +35,11 @@ export class TaskService {
       where: { lastListeningAt: LessThan(beforeOneMinute), isListening: true },
     });
 
+    for (let i = 0; i < users.length; i++) {
+      const user = users[i];
+      user.isListening = false;
+    }
+
     await this.userRepository.save(users);
   }
 }

@@ -342,6 +342,7 @@ export class RoomService {
     }
 
     user.lastListeningAt = new Date();
+    user.isListening = true;
     this.userRepository.save(user);
 
     return;

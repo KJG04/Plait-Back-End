@@ -3,6 +3,7 @@ const enum subscriptionKeys {
   listening = 'LISTENING',
   changeRoom = 'CHANGE_ROOM',
   listeningEmoji = 'LISTENING_EMOJI',
+  listeningPlayTime = 'LISTENING_PLAYTIME',
 }
 
 export default subscriptionKeys;

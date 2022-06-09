@@ -355,4 +355,20 @@ export class RoomService {
       throw new PersistedQueryNotFoundError();
     }
   }
+
+  async updatePlayTime(roomCode: string, playTime: number) {
+    let room: Room;
+
+    try {
+      room = await this.roomRepository.findOneByOrFail({ code: roomCode });
+    } catch (error) {
+      throw new PersistedQueryNotFoundError();
+    }
+
+    room.playTime = playTime;
+
+    await this.roomRepository.save(room);
+
+    return;
+  }
 }

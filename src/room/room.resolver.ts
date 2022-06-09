@@ -287,4 +287,39 @@ export class RoomResolver {
       `${subscriptionKeys.listeningEmoji}_${roomCode}`,
     );
   }
+
+  @Subscription(() => Int, { name: 'playTime' })
+  async subscriptionPlayTime(
+    @Args('roomCode') roomCode: string,
+    @Context() context: any,
+  ) {
+    const token = context.token;
+
+    await this.roomService.checkAuthenfication(token, roomCode);
+    await this.roomService.checkIsRoomExist(roomCode);
+
+    return pubSub.asyncIterator(
+      `${subscriptionKeys.listeningPlayTime}_${roomCode}`,
+    );
+  }
+
+  @Mutation(() => Boolean, { name: 'updatePlayTime' })
+  async updatePlayTime(
+    @Args('roomCode') roomCode: string,
+    @Args('playTime') playTime: number,
+    @Args('force') force: boolean,
+    @Context() context: any,
+  ) {
+    const token = context.req.cookies[tokenName];
+    await this.roomService.checkAuthenfication(token, roomCode);
+    await this.roomService.updatePlayTime(roomCode, playTime);
+
+    if (force) {
+      pubSub.publish(`${subscriptionKeys.listeningPlayTime}_${roomCode}`, {
+        playTime,
+      });
+    }
+
+    return true;
+  }
 }

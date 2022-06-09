@@ -25,7 +25,7 @@ export class Content {
   uuid: string;
 
   @Field(() => String)
-  @Column({ type: 'varchar' })
+  @Column()
   @IsString()
   contentId: string;
 

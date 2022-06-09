@@ -25,12 +25,12 @@ export class User {
   uuid: string;
 
   @Field(() => String)
-  @Column({ type: 'varchar', length: 36 })
+  @Column({ length: 36 })
   @IsString()
   name: string;
 
   @Field(() => String)
-  @Column({ type: 'varchar', length: 6 })
+  @Column({ length: 6 })
   @IsString()
   color: string;
 
@@ -43,7 +43,7 @@ export class User {
   isListening: boolean;
 
   @Field(() => Date)
-  @Column({ type: 'datetime' })
+  @Column()
   @IsDate()
   lastListeningAt: Date;
 

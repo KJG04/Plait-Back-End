@@ -28,7 +28,7 @@ export class Room {
   playTime: number;
 
   @Field(() => Date)
-  @Column({ type: 'datetime' })
+  @Column()
   @IsDate()
   createdAt: Date;
 

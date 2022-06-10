@@ -18,11 +18,7 @@ import { TaskModule } from './task/task.module';
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST,
-      port: Number.parseInt(process.env.DB_PORT),
-      username: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
+      url: process.env.DATABASE_URL,
       entities: [User, Content, Room],
       synchronize: true,
       namingStrategy: new SnakeNamingStrategy(),

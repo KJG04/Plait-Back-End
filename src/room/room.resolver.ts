@@ -15,8 +15,15 @@ import subscriptionKeys from 'src/shared/subscriptionKeys';
 import { ContentType } from './entities/content.entity';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { Emoji, EmojiInput } from './interface/EmojiEvent';
+import 'dotenv/config';
 
-const pubSub = new RedisPubSub();
+const pubSub = new RedisPubSub({
+  connection: {
+    host: process.env.REDIS_HOST,
+    port: Number.parseInt(process.env.REDIS_PORT),
+    password: process.env.REDIS_PASSWORD,
+  },
+});
 
 @Resolver(() => Room)
 export class RoomResolver {

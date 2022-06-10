@@ -19,8 +19,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "prestart:prod": "rimraf dist && npm run build",
-    "web": "npm run start:prod"
+    "prestart:prod": "rimraf dist && npm run build"
   },
   "dependencies": {
     "@nestjs/apollo": "^10.0.9",
@@ -39,6 +38,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.2",
     "cookie-parser": "^1.4.6",
+    "dotenv": "^16.0.1",
     "graphql": "^16.4.0",
     "graphql-redis-subscriptions": "^2.4.2",
     "graphql-subscriptions": "^2.0.0",

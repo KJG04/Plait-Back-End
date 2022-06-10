@@ -18,11 +18,11 @@ import { TaskModule } from './task/task.module';
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: '127.0.0.1',
-      port: 5432,
+      host: process.env.DB_HOST,
+      port: Number.parseInt(process.env.DB_PORT),
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
-      database: 'plait',
+      database: process.env.DB_NAME,
       entities: [User, Content, Room],
       synchronize: true,
       namingStrategy: new SnakeNamingStrategy(),
@@ -36,7 +36,7 @@ import { TaskModule } from './task/task.module';
       },
       driver: ApolloDriver,
       cors: {
-        origin: 'http://localhost:3000',
+        origin: process.env.CORS_ORIGIN,
         credentials: true,
       },
       context: (context) => context,

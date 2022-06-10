@@ -22,6 +22,7 @@ const pubSub = new RedisPubSub({
     host: process.env.REDIS_HOST,
     port: Number.parseInt(process.env.REDIS_PORT),
     password: process.env.REDIS_PASSWORD,
+    name: process.env.REDIS_NAME,
   },
 });
 
